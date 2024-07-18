@@ -22,6 +22,10 @@ const Message = sequelize.define('Message', {
             model: User,
             key: 'id'
         }
+    },
+    roomId: {
+        type: DataTypes.STRING,
+        allowNull: false,
     }
 });
 

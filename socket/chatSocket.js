@@ -20,33 +20,40 @@ module.exports = (io) => {
     });
 
     io.on('connection', (socket) => {
-        console.log('A user connected');
+        console.log('A user connected with socket id:', socket.id);
+
+        socket.on('join_room', (roomId) => {
+            socket.join(roomId);
+            console.log(`User with socket id ${socket.id} joined room ${roomId}`);
+        });
 
         socket.on('private_message', async (data) => {
-            const { content, to } = data;
+            const { content, to, roomId } = data;
             const from = socket.userId;
             try {
-                const message = await Message.create({ senderId: from, receiverId: to, content });
+                const message = await Message.create({ senderId: from, receiverId: to, content, roomId });
                 const receiver = await User.findByPk(to);
                 if (receiver && receiver.socketId) {
-                    io.to(receiver.socketId).emit('private_message', {
+                    io.to(roomId).emit('private_message', {
                         content: message.content,
                         from: message.senderId
                     });
                 }
-                // Emit to sender as well
-                io.to(socket.id).emit('private_message', {
-                    content: message.content,
-                    from: message.senderId
-                });
             } catch (error) {
                 console.error('Error sending message', error);
             }
         });
 
         socket.on('disconnect', async () => {
-            console.log('A user disconnected');
+            console.log('A user disconnected with socket id:', socket.id);
             await User.update({ socketId: null }, { where: { id: socket.userId } });
+        });
+
+        // Notify all clients about the updated user list
+        User.findAll({ attributes: ['id', 'username'] }).then(users => {
+            io.emit('user_list', users);
+        }).catch(error => {
+            console.error('Error fetching users', error);
         });
     });
 };

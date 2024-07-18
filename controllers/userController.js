@@ -14,3 +14,24 @@ exports.getCurrentUser = async (req, res) => {
         res.status(500).json({ message: 'Error fetching user', error });
     }
 };
+
+exports.getUsers = async (req, res) => {
+    try {
+        const users = await User.findAll({ attributes: ['id', 'username'] });
+        res.json(users);
+    } catch (error) {
+        res.status(500).json({ message: 'Error fetching users', error });
+    }
+};
+
+const Message = require('../models/Message');
+
+exports.getMessages = async (req, res) => {
+    const { roomId } = req.params;
+    try {
+        const messages = await Message.findAll({ where: { roomId } });
+        res.json(messages);
+    } catch (error) {
+        res.status(500).json({ message: 'Error fetching messages', error });
+    }
+};
